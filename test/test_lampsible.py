@@ -29,6 +29,11 @@ class TestLampsible(unittest.TestCase):
             ssl_test_cert=True,
             apache_server_admin='me@me.me'
         )
+        if web_host in ['localhost', '127.0.0.1']:
+            from getpass import getpass
+            self.lampsible.remote_sudo_password = getpass(
+                'Please enter local sudo password: '
+            )
 
 
     def test_banner(self):
@@ -37,6 +42,7 @@ class TestLampsible(unittest.TestCase):
 
     def test_apache(self):
         self.lampsible.set_action('apache')
+        self.lampsible.ssl_certbot = False
         self._do_test_run()
 
 

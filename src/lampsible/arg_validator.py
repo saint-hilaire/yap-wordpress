@@ -1,7 +1,7 @@
 import os
 from re import match
 from copy import deepcopy
-from getpass import getpass
+from getpass import getpass, getuser
 from textwrap import dedent
 from requests import head as requests_head
 from lampsible.constants import *
@@ -108,17 +108,39 @@ class ArgValidator():
 
 
     def validate_ansible_runner_args(self):
-        if self.args.web_user_host:
+        try:
+            web_user_host = self.args.web_user_host.split('@')
+            self.validated_args.web_user = web_user_host[0]
+            self.validated_args.web_host = web_user_host[1]
+        except IndexError:
+            self.validated_args.web_host = self.validated_args.web_user
             try:
-                web_user_host = self.args.web_user_host.split('@')
-                self.validated_args.web_user = web_user_host[0]
-                self.validated_args.web_host = web_user_host[1]
-            except (IndexError, AttributeError):
-                print("FATAL! First positional argument must be in the format of 'user@host'.")
+                assert self.validated_args.web_host in ['localhost',
+                    '127.0.0.1']
+                self.validated_args.web_user = getuser()
+            except AssertionError:
+                print(dedent(
+                    """
+                    FATAL! User can only be omitted if your web host is
+                    localhost. Otherwise, if passing in a remote host,
+                    first positional argument needs to be in the format
+                    'user@host'.
+                    """
+                    ))
                 return 1
-        elif not (self.args.web_user and self.args.web_host):
-            print("FATAL! Got no 'web_user' and 'web_host'.")
+        except AttributeError:
+            print(dedent(
+                """
+                FATAL! First positional argument must be in the format of
+                'user@host', or if running directly on your web host,
+                it needs to be one of 'localhost' or '127.0.0.1'.
+                """
+                ))
             return 1
+
+        if self.validated_args.web_host in ['localhost', '127.0.0.1'] \
+                and self.validated_args.web_user != 'root':
+            self.args.ask_remote_sudo = True
 
         if self.args.database_system_user_host:
             try:
@@ -137,9 +159,12 @@ class ArgValidator():
             # TODO: This is already taken care of in the Lampsible constructor.
             self.validated_args.database_system_user = self.validated_args.web_user
             self.validated_args.database_system_host = self.validated_args.web_host
+
         if self.args.action not in SUPPORTED_ACTIONS:
-            print('FATAL! Second positional argument must be one of {}'.format(
-                ', '.join(SUPPORTED_ACTIONS)
+            print(dedent("""
+                FATAL! Second positional argument must be one of:
+                {}
+                """.format(', '.join(SUPPORTED_ACTIONS))
             ))
             return 1
 
@@ -149,7 +174,7 @@ class ArgValidator():
             return 1
         if self.args.ask_remote_sudo:
             self.validated_args.remote_sudo_password = self.get_pass_and_check(
-                'Please enter sudo password for remote host: ')
+                'Please enter sudo password for web host: ')
         return 0
 
 

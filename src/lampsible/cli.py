@@ -397,7 +397,12 @@ def main():
     result = validator.validate_args()
 
     if result != 0:
-        print('FATAL! Got invalid user input, and cannot continue. Please fix the issues listed above and try again.')
+        print(dedent(
+            """
+            FATAL! Got invalid user input, and cannot continue.
+            Please fix the issues listed above and try again.
+            """
+            ))
         return 1
 
     args = validator.get_validated_args()
