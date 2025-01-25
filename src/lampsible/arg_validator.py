@@ -110,8 +110,12 @@ class ArgValidator():
     def validate_ansible_runner_args(self):
         try:
             web_user_host = self.args.web_user_host.split('@')
+            assert len(web_user_host) <= 2
             self.validated_args.web_user = web_user_host[0]
             self.validated_args.web_host = web_user_host[1]
+        except AssertionError:
+            print("FATAL! First positional argument is invalid.")
+            return 1
         except IndexError:
             self.validated_args.web_host = self.validated_args.web_user
             try:
@@ -138,9 +142,18 @@ class ArgValidator():
                 ))
             return 1
 
-        if self.validated_args.web_host in ['localhost', '127.0.0.1'] \
-                and self.validated_args.web_user != 'root':
-            self.args.ask_remote_sudo = True
+        if self.validated_args.web_host in ['localhost', '127.0.0.1']:
+            self.validated_args.web_user = getuser()
+            if '@' in self.args.web_user_host:
+                print(dedent(
+                    """
+                    Warning! The 'user' in 'user@localhost' will be ignored,
+                    and replaced by current running user ({}). When running
+                    locally, it's enough to just pass in
+                    'localhost' or '127.0.0.1'.
+                    """.format(self.validated_args.web_user)
+                ))
+            self.args.ask_remote_sudo = os.geteuid() != 0
 
         if self.args.database_system_user_host:
             try:
