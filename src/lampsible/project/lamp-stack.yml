@@ -1,5 +1,6 @@
 ---
 - hosts: database_servers
+  become: true
   gather_facts: true
   tasks:
     - include_role:
