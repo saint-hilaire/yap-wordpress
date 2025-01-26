@@ -1,5 +1,6 @@
 import os
 import unittest
+from getpass import getpass, getuser
 from lampsible import __version__
 from lampsible.lampsible import Lampsible
 from lampsible.constants import *
@@ -11,9 +12,11 @@ class TestLampsible(unittest.TestCase):
             tmp_remote = os.environ['LAMPSIBLE_REMOTE'].split('@')
             web_user = tmp_remote[0]
             web_host = tmp_remote[1]
-        except (KeyError, AttributeError):
-            web_user = 'user'
+        except IndexError:
+            web_user = getuser()
             web_host = 'localhost'
+        except KeyError:
+            exit("Please set environment variable 'LAMPSIBLE_REMOTE'!")
 
         self.lampsible = Lampsible(
             web_user=web_user,
@@ -30,7 +33,6 @@ class TestLampsible(unittest.TestCase):
             apache_server_admin='me@me.me'
         )
         if web_host in ['localhost', '127.0.0.1']:
-            from getpass import getpass
             self.lampsible.remote_sudo_password = getpass(
                 'Please enter local sudo password: '
             )
