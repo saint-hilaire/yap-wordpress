@@ -22,14 +22,6 @@
       - "--locale={{ wordpress_locale }}"
       - "--version={{ wordpress_version }}"
 
-- name: Set file ownership for WordPress directory
-  file:
-    path: "{{ apache_document_root }}"
-    state: directory
-    recurse: yes
-    owner: www-data
-    group: www-data
-
 # https://developer.wordpress.org/cli/commands/config/create/
 - name: Create wp-config.php
   # TODO: We can add --dbcharset and --dbcollate.
@@ -40,6 +32,7 @@
       - wp
       - config
       - create
+      - --allow-root
       - --force
       - "--path={{ apache_document_root }}"
       - "--dbname={{ database_name }}"
@@ -50,7 +43,6 @@
       - "--locale={{ wordpress_locale }}"
       - --extra-php
     stdin: "define( 'FS_METHOD', 'direct' );"
-  become_user: www-data
 
 # https://developer.wordpress.org/cli/commands/db/create/
 # TODO: Might not even need this...
@@ -61,13 +53,13 @@
       - wp
       - db
       - create
+      - --allow-root
       - "--path={{ apache_document_root }}"
       - "--dbname={{ database_name }}"
       - "--dbuser={{ database_username }}"
       - "--dbpass={{ database_password }}"
       - "--dbhost={{ database_host }}"
   ignore_errors: true
-  become_user: www-data
 
 # https://developer.wordpress.org/cli/commands/core/install/
 - name: Install WordPress
@@ -77,6 +69,7 @@
       - wp
       - core
       - install
+      - --allow-root
       - "--path={{ apache_document_root }}"
       - "--url={{ wordpress_url }}"
       - "--title={{ site_title }}"
@@ -84,7 +77,14 @@
       - "--admin_password={{ admin_password }}"
       - "--admin_email={{ admin_email }}"
       - "--locale={{ wordpress_locale }}"
-  become_user: www-data
+
+- name: Set file ownership for WordPress directory
+  file:
+    path: "{{ apache_document_root }}"
+    state: directory
+    recurse: yes
+    owner: www-data
+    group: www-data
 
 # TODO: It would be really cool if WP-CLI could do this, for example,
 # passing a '--harden' flag to the 'config' command.

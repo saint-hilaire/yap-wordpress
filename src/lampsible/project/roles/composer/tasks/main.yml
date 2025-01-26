@@ -25,7 +25,8 @@
     command: create-project
     arguments: "{{ composer_project }} {{ composer_working_directory }}"
     working_dir: "{{ composer_working_directory }}"
-  become_user: www-data
+  environment:
+    COMPOSER_ALLOW_SUPERUSER: "1"
   when: composer_project and not composer_json.stat.exists
 
 - name: Install Composer packages
@@ -36,5 +37,14 @@
   loop: "{{ composer_packages }}"
   loop_control:
     loop_var: package
-  become_user: www-data
+  environment:
+    COMPOSER_ALLOW_SUPERUSER: "1"
   when: composer_packages
+
+- name: Make Apache owner of Composer working directory
+  file:
+    path: "{{ composer_working_directory }}"
+    state: directory
+    recurse: yes
+    owner: www-data
+    group: www-data
