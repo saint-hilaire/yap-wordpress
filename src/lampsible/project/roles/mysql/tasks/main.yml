@@ -57,17 +57,40 @@
     host: "{{ '%' if open_database else 'localhost' }}"
     # TODO: Consider using this along with a hashed password.
     # encrypted: true
-    priv: '*.*:ALL'
+    # TODO: Some of these changes I am not so sure about.
+    # See the following for more info:
+    # * https://stackoverflow.com/questions/63791797/why-can-ansible-not-connect-to-mysql
+    # * https://dba.stackexchange.com/questions/274547/cant-set-root-password-after-fresh-installation-of-mariadb-using-ansible
+    # * https://stackoverflow.com/questions/44614863/ansible-unable-to-find-my-cnf-cant-connect-to-local-mysql-server
+    # * https://github.com/ansible-collections/community.mysql/issues/215
+    priv: '*.*:ALL,GRANT'
+    #check_implicit_admin: true
     state: present
-    login_unix_socket: /run/mysqld/mysqld.sock
+    # TODO: For now, I just hardcoded a new value
+    # just so I can quickly debug this locally.
+    # The actual solution should parameterize this value,
+    # ideally with some CLI flag that can be passed to
+    # the lampsible command, with the default value
+    # '/run/mysqld/mysqld.sock'.
+    # This also applies to the other block below,
+    # which also makes use of the parameter 'login_unix_socket'.
+    login_unix_socket: /var/run/mysqld/mysqld.sock
     # TODO: Some other options to consider:
     # host: localhost
     # host_all: true
   when: database_username
 
+- name: Save database password in .my.cnf
+  template:
+    src: .my.cnf.j2
+    dest: /root/.my.cnf
+    owner: root
+    mode: '0600'
+
 - name: Create database
   community.mysql.mysql_db:
     name: "{{ database_name }}"
     state: present
-    login_unix_socket: /run/mysqld/mysqld.sock
+    # TODO: See comment above.
+    login_unix_socket: /var/run/mysqld/mysqld.sock
   when: database_name
