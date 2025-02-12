@@ -65,6 +65,32 @@ SUPPORTED_PHP_VERSIONS = [
     '7.4', '7.3', '7.2', '7.1', '7.0',
     '5.6', '5.5', '5.4',
 ]
+REQUIRED_PHP_EXTENSIONS = {
+    'lamp-stack': ['mysql'],
+    'wordpress': [
+        'mysql',
+        'gd',
+    ],
+    'joomla': [
+        'simplexml',
+        'dom',
+        'zip',
+        'gd',
+        'mysql',
+    ],
+    'drupal': [
+        'mysql',
+        'xml',
+        'gd',
+        'curl',
+        'mbstring',
+    ],
+    'laravel': [
+        'mysql',
+        'xml',
+        'mbstring',
+    ],
+}
 
 # All CMS
 # -------
