@@ -125,28 +125,19 @@ class Lampsible:
     def set_action(self, action):
         self.action = action
 
-        if action == 'lamp-stack':
-            required_php_extensions = ['php-mysql']
-        elif action == 'wordpress':
-            required_php_extensions = ['php-mysql']
+        try:
+            required_php_extensions = [
+                'php-{}'.format(
+                    extension
+                ) for extension in REQUIRED_PHP_EXTENSIONS[self.action]
+            ]
+        except KeyError:
+            required_php_extensions = []
+
+        if action == 'wordpress':
             if self.database_table_prefix == DEFAULT_DATABASE_TABLE_PREFIX:
                 self.database_table_prefix = 'wp_'
-        elif action == 'joomla':
-            required_php_extensions = [
-                'php-simplexml',
-                'php-dom',
-                'php-zip',
-                'php-gd',
-                'php-mysql',
-            ]
         elif action == 'drupal':
-            required_php_extensions = [
-                'php-mysql',
-                'php-xml',
-                'php-gd',
-                'php-curl',
-                'php-mbstring',
-            ]
             if not self.composer_project:
                 self.composer_project = 'drupal/recommended-project'
             if not self.composer_working_directory:
@@ -158,14 +149,7 @@ class Lampsible:
                     self.composer_packages.append('drush/drush')
             except AttributeError:
                 self.composer_packages = ['drush/drush']
-        elif action == 'laravel':
-            required_php_extensions = [
-                'php-mysql',
-                'php-xml',
-                'php-mbstring',
-            ]
-        else:
-            required_php_extensions = []
+
         for ext in required_php_extensions:
             if ext not in self.php_extensions:
                 self.php_extensions.append(ext)
