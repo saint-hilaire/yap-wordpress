@@ -254,9 +254,6 @@ class Lampsible:
 
 
     def _update_env(self):
-        # TODO: Build this list conditionally, based on the action,
-        # to avoid setting unnecessary variables. See ArgValidator.get_extravars_dict,
-        # which we must also deprecate in favor of this method here.
         extravars = [
             'web_host',
             'apache_vhosts',
@@ -282,18 +279,34 @@ class Lampsible:
             'admin_username',
             'admin_password',
             'admin_email',
-            'wordpress_version',
-            'wordpress_locale',
-            'wordpress_url',
-            'wordpress_insecure_allow_xmlrpc',
-            'joomla_version',
-            'joomla_admin_full_name',
-            'drupal_profile',
-            'app_name',
-            'app_build_path',
-            'app_source_root',
-            'laravel_artisan_commands',
-            'app_local_env',
+        ]
+
+        if self.action == 'wordpress':
+            extravars.extend([
+                'wordpress_version',
+                'wordpress_locale',
+                'wordpress_url',
+                'wordpress_insecure_allow_xmlrpc',
+            ])
+        elif self.action == 'joomla':
+            extravars.extend([
+                'joomla_version',
+                'joomla_admin_full_name',
+            ])
+        elif self.action == 'drupal':
+            extravars.extend([
+                'drupal_profile',
+            ])
+        elif self.action == 'laravel':
+            extravars.extend([
+                'app_name',
+                'app_build_path',
+                'app_source_root',
+                'laravel_artisan_commands',
+                'app_local_env',
+            ])
+
+        extravars.extend([
             'ssl_certbot',
             'email_for_ssl',
             'certbot_domains_string',
@@ -306,7 +319,8 @@ class Lampsible:
             # ansible-directory-helper.
             'ansible_sudo_pass',
             'open_database',
-        ]
+        ])
+
         for varname in extravars:
             if varname == 'server_name':
                 if FQDN.is_valid(self.web_host):
