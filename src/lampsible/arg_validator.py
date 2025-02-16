@@ -587,7 +587,10 @@ class ArgValidator():
             extensions = ['mysql']
 
         elif self.args.action == 'wordpress':
-            extensions = ['mysql']
+            extensions = [
+                'mysql',
+                'gd',
+            ]
 
         elif self.args.action == 'joomla':
             extensions = [
