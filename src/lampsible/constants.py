@@ -65,6 +65,32 @@ SUPPORTED_PHP_VERSIONS = [
     '7.4', '7.3', '7.2', '7.1', '7.0',
     '5.6', '5.5', '5.4',
 ]
+REQUIRED_PHP_EXTENSIONS = {
+    'lamp-stack': ['mysql'],
+    'wordpress': [
+        'mysql',
+        'gd',
+    ],
+    'joomla': [
+        'simplexml',
+        'dom',
+        'zip',
+        'gd',
+        'mysql',
+    ],
+    'drupal': [
+        'mysql',
+        'xml',
+        'gd',
+        'curl',
+        'mbstring',
+    ],
+    'laravel': [
+        'mysql',
+        'xml',
+        'mbstring',
+    ],
+}
 
 # All CMS
 # -------
@@ -79,7 +105,7 @@ DEFAULT_WORDPRESS_LOCALE  = 'en_US'
 RECENT_WORDPRESS_VERSIONS = [
     'latest',
     'nightly',
-    '6.7.1', '6.7',
+    '6.7.2', '6.7.1', '6.7',
     '6.6.2', '6.6.1', '6.6',
     '6.5.5', '6.5.4', '6.5.3', '6.5.2', '6.5',
     '6.4.4', '6.4.3', '6.4.2', '6.4.1', '6.4',

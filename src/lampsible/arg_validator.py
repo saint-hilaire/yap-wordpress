@@ -303,39 +303,11 @@ class ArgValidator():
                 extension.strip()
                 for extension in self.args.php_extensions.split(',')
             ]
-        elif self.args.action == 'lamp-stack':
-            extensions = ['mysql']
-
-        elif self.args.action == 'wordpress':
-            extensions = ['mysql']
-
-        elif self.args.action == 'joomla':
-            extensions = [
-                'simplexml',
-                'dom',
-                'zip',
-                'gd',
-                'mysql',
-            ]
-
-        elif self.args.action == 'drupal':
-            extensions = [
-                'mysql',
-                'xml',
-                'gd',
-                'curl',
-                'mbstring',
-            ]
-
-        elif self.args.action == 'laravel':
-            extensions = [
-                'mysql',
-                'xml',
-                'mbstring'
-            ]
-
         else:
-            extensions = []
+            try:
+                extensions = REQUIRED_PHP_EXTENSIONS[self.args.action]
+            except KeyError:
+                extensions = []
 
         self.validated_args.php_extensions = [
             'php{}-{}'.format(

@@ -14,7 +14,7 @@ This tool can automate almost anything that you'd expect from a LAMP stack.
 * Custom Apache configuration (custom webroot, vhosts, etc.)
 * Production ready SSL via Certbot
 * SSL for test servers (to avoid being rate limited by Let's Encrypt)
-* Self signed SSL for hardcore DIY folks
+* Self signed SSL, good for local test networks
 * Apache and database on the same server, or separate servers, whatever you prefer
 * Specify PHP version
 * Specify PHP extensions
@@ -23,17 +23,34 @@ This tool can automate almost anything that you'd expect from a LAMP stack.
 
 ## Requirements
 
+It depends a little how you want to use this. Originally, it was designed to run "via SSH", like most Ansible
+use cases. This means you have some remote server (or 2 servers, if web and database host are 2 different machines),
+where you want to deploy your website. This must be reachable via SSH. Lampsible, on the other hand, will be
+installed on your local machine.
+<br>
+However, since v2.1, you can run Lampsible "locally", which means you install Lampsible on the same machine that
+will host your website.
+
+### Via SSH
+
+This is the preferred way to use Lampsible.
+
 * Local: Unix system with Python 3.11 or newer. Tested on Ubuntu and Gentoo Linux. Might work on macOS, but I haven't tested that. Won't work on Windows,
   because Ansible requires a Unix like system.
-* Remote: Ubuntu 20 or newer. Might work on older versions, but I doubt it. Support for other distros is planned in a future version.
+* Remote: Ubuntu 20 or newer. You need SSH access and root privilege, or ability to elevate privilege to root.
+  Might work on older versions, but I doubt it. Support for other distros is planned in a future version.
+
+### Alternative: running locally
+
+Your machine should be similar to the "Remote" outlined above, Ubuntu Linux. Also, you need root access on that machine.
+Ideally, you'll run as a nonprivileged user, and be asked for the root password. Finally, if you run this way, this
+should not be some kind production server, but some local test server in a private network.
 
 ## Installing
 
 Install with Pip: `python3 -m pip install lampsible`
 
-Alternatively, install from wheel file...: `python3 -m pip install /path/to/local/lampsible-SOME_VERSION-py3-none-any.whl`
-
-... or from source:
+Or from source:
 ```
 git clone https://github.com/saint-hilaire/lampsible
 cd lampsible
@@ -49,6 +66,8 @@ There are 2 ways to use Lampsible: as a CLI tool, or as a Python library.
 Once you've installed Lampsible onto your local environment, you can run the `lampsible` command.
 
 It takes the format: `lampsible user@host ACTION [OPTIONS]`
+
+If you are running locally, you can simply do: `lampsible localhost ACTION [OPTIONS]`
 
 It is designed to be very simple to use. If you omit some important parameter,
 like admin user, password, site title, etc, you will be prompted to enter a value,
