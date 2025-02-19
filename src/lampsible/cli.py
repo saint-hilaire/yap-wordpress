@@ -190,8 +190,6 @@ def main():
         because it makes your site look untrustworthy to visitors.
         """
     )
-    # SSL
-    # ---
     parser.add_argument('--email-for-ssl',
         help="""
         the email address that will be passed to Certbot.
@@ -239,6 +237,14 @@ def main():
         Be advised that Ansible Runner will write sensitive data here,
         like your private SSH key and passwords,
         but Lampsible will delete this directory when it finishes.
+        """
+    )
+    parser.add_argument('--ansible-galaxy-ok', action='store_true',
+        help="""
+        Pass this flag to give your consent to install any missing
+        Ansible Galaxy dependencies onto your local machine.
+        Otherwise, if any Galaxy Collections are missing, and you omitted
+        this flag, an error will be displayed.
         """
     )
 
@@ -458,20 +464,9 @@ def main():
         extra_env_vars=args.extra_env_vars,
         extra_packages=args.extra_packages,
         ssh_key_file=args.ssh_key_file,
-        remote_sudo_password=args.remote_sudo_password
+        remote_sudo_password=args.remote_sudo_password,
+        ansible_galaxy_ok=args.ansible_galaxy_ok,
     )
-
-    # TODO: Improve this?
-    galaxy_result = ensure_ansible_galaxy_dependencies(
-        os.path.join(
-            PROJECT_DIR,
-            'ansible-galaxy-requirements.yml'
-        ),
-        USER_HOME_DIR
-    )
-    if galaxy_result == 1:
-        return 1
-
 
     if args.action == 'dump-ansible-facts':
         # TODO: Refactor this.

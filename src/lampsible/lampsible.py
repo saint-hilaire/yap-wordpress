@@ -1,5 +1,7 @@
 import os
 from copy import deepcopy
+from textwrap import dedent
+from yaml import safe_load
 from ansible_runner import (
     Runner, RunnerConfig, run_command, run as ansible_runner_run
 )
@@ -38,6 +40,7 @@ class Lampsible:
             domains_for_ssl=[], ssl_test_cert=False,
             extra_packages=[], extra_env_vars={},
             apache_custom_conf_name='',
+            ansible_galaxy_ok=False,
             ):
 
         self.web_user = web_user
@@ -120,6 +123,7 @@ class Lampsible:
         self.remote_sudo_password = remote_sudo_password
 
         self.banner = LAMPSIBLE_BANNER
+        self.ansible_galaxy_ok = ansible_galaxy_ok
 
 
     def set_action(self, action):
@@ -379,8 +383,6 @@ class Lampsible:
                 else:
                     value = True
 
-
-
             else:
                 value = getattr(self, varname)
 
@@ -391,6 +393,61 @@ class Lampsible:
 
     def _prepare_config(self):
         self.runner_config.prepare()
+
+
+    def _ensure_galaxy_dependencies(self):
+        with open(GALAXY_REQUIREMENTS_FILE, 'r') as stream:
+            required_collections = []
+            tmp_collections = safe_load(stream)['collections']
+            for tmp_dict in tmp_collections:
+                required_collections.append(tmp_dict['name'])
+
+        # TODO There might be a more elegant way to do this - Right now,
+        # we're expecting required_collections to always be a tuple,
+        # and searching for requirements in a big string, but yaml/dict
+        # would be better.
+        installed_collections = run_command(
+            executable_cmd='ansible-galaxy',
+            cmdline_args=[
+                'collection',
+                'list',
+                '--collections-path',
+                os.path.join(USER_HOME_DIR, '.ansible'),
+            ],
+            quiet=True
+        )[0]
+        missing_collections = []
+        for required in required_collections:
+            if required not in installed_collections:
+                missing_collections.append(required)
+        if len(missing_collections) == 0:
+            return 0
+        else:
+            return self._install_galaxy_collections(missing_collections)
+
+
+    # TODO: We should restore the interactive nature of this feature.
+    # However, it could be a little complex actually...
+    def _install_galaxy_collections(self, collections):
+        if self.ansible_galaxy_ok:
+            print('\nInstalling Ansible Galaxy collections...')
+            run_command(
+                executable_cmd='ansible-galaxy',
+                cmdline_args=['collection', 'install'] + collections,
+            )
+            print('\n... collections installed.')
+            return 0
+        else:
+            print(dedent("""
+The following Ansible Galaxy dependencies are missing,
+and need to be installed into {}:\n- {}\n
+Please rerun this command with '--ansible-galaxy-ok' (if running CLI),
+or set the attribute Lampsible.ansible_galaxy_ok=True (if running Lampsible library).
+                """.format(
+                os.path.join(USER_HOME_DIR),
+                '\n- '.join(collections)
+            )))
+            return 1
 
 
     # TODO: Do it this way?
@@ -407,6 +464,8 @@ class Lampsible:
         self._set_apache_vars()
         self._update_env()
         self._prepare_config()
+        if self._ensure_galaxy_dependencies() == 1:
+            return 1
         try:
             self.runner.run()
             print(self.runner.stats)
