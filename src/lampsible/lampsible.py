@@ -434,8 +434,6 @@ class Lampsible:
             return self._install_galaxy_collections(missing_collections)
 
 
-    # TODO: We should restore the interactive nature of this feature.
-    # However, it could be a little complex actually...
     def _install_galaxy_collections(self, collections):
         if not self.ansible_galaxy_ok:
             formatted_collections_list = '\n- '.join(collections)
@@ -465,7 +463,9 @@ Ansible Galaxy dependencies into {}:\n- {}\nIs this OK (yes/no)?
             if ok_to_install != 'yes':
                 return 1
 
-        print('\nInstalling Ansible Galaxy collections...')
+        print('\nInstalling Ansible Galaxy collections into {} ...'.format(
+            os.path.join(USER_HOME_DIR, '.ansible')
+        ))
         run_command(
             executable_cmd='ansible-galaxy',
             cmdline_args=['collection', 'install'] + collections,
@@ -488,14 +488,15 @@ Ansible Galaxy dependencies into {}:\n- {}\nIs this OK (yes/no)?
         self._set_apache_vars()
         self._update_env()
         self._prepare_config()
-        if self._ensure_galaxy_dependencies() == 1:
-            return 1
+
+        rc = 1
         try:
+            assert self._ensure_galaxy_dependencies() == 0
             self.runner.run()
             print(self.runner.stats)
-            self.private_data_helper.cleanup_dir()
-            # TODO: We could do this better, like check the fact_cache and make sure
-            # everything was alright, before returning 0.
-            return 0
-        except RuntimeError:
-            return 1
+            rc = self.runner.rc
+        except (AssertionError, RuntimeError):
+            pass
+
+        self.private_data_helper.cleanup_dir()
+        return rc
