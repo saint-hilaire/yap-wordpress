@@ -243,8 +243,8 @@ def main():
         help="""
         Pass this flag to give your consent to install any missing
         Ansible Galaxy dependencies onto your local machine.
-        Otherwise, if any Galaxy Collections are missing, and you omitted
-        this flag, an error will be displayed.
+        Otherwise, if any Galaxy Collections are missing, you will be asked
+        if it is OK to install them.
         """
     )
 
@@ -466,6 +466,7 @@ def main():
         ssh_key_file=args.ssh_key_file,
         remote_sudo_password=args.remote_sudo_password,
         ansible_galaxy_ok=args.ansible_galaxy_ok,
+        interactive=True,
     )
 
     if args.action == 'dump-ansible-facts':

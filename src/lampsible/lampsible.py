@@ -41,6 +41,13 @@ class Lampsible:
             extra_packages=[], extra_env_vars={},
             apache_custom_conf_name='',
             ansible_galaxy_ok=False,
+            # TODO: Lots of room for improvement for this one.
+            # For now, just adding it so we can keep the interactive prompt
+            # about installing missing Galaxy Collections, otherwise, it would
+            # be annoying for the user to have to rerun from the beginning.
+            # But "interactive Lampsible" could be a big feature, perhaps something
+            # for v3.
+            interactive=False,
             ):
 
         self.web_user = web_user
@@ -124,6 +131,7 @@ class Lampsible:
 
         self.banner = LAMPSIBLE_BANNER
         self.ansible_galaxy_ok = ansible_galaxy_ok
+        self.interactive = interactive
 
 
     def set_action(self, action):
@@ -429,25 +437,41 @@ class Lampsible:
     # TODO: We should restore the interactive nature of this feature.
     # However, it could be a little complex actually...
     def _install_galaxy_collections(self, collections):
-        if self.ansible_galaxy_ok:
-            print('\nInstalling Ansible Galaxy collections...')
-            run_command(
-                executable_cmd='ansible-galaxy',
-                cmdline_args=['collection', 'install'] + collections,
-            )
-            print('\n... collections installed.')
-            return 0
-        else:
-            print(dedent("""
+        if not self.ansible_galaxy_ok:
+            formatted_collections_list = '\n- '.join(collections)
+
+            if not self.interactive:
+                print(dedent("""
 The following Ansible Galaxy dependencies are missing,
 and need to be installed into {}:\n- {}\n
-Please rerun this command with '--ansible-galaxy-ok' (if running CLI),
-or set the attribute Lampsible.ansible_galaxy_ok=True (if running Lampsible library).
+Please set the attribute 'Lampsible.ansible_galaxy_ok=True'.
                 """.format(
-                os.path.join(USER_HOME_DIR),
-                '\n- '.join(collections)
-            )))
-            return 1
+                    USER_HOME_DIR,
+                    formatted_collections_list
+                )))
+                return 1
+
+            ok_to_install = input(dedent(
+                """
+I have to download and install the following
+Ansible Galaxy dependencies into {}:\n- {}\nIs this OK (yes/no)?
+                """).format(
+                os.path.join(USER_HOME_DIR, '.ansible/'),
+                formatted_collections_list
+            )).lower()
+            while ok_to_install != 'yes' and ok_to_install != 'no':
+                ok_to_install = input("Please type 'yes' or 'no': ")
+
+            if ok_to_install != 'yes':
+                return 1
+
+        print('\nInstalling Ansible Galaxy collections...')
+        run_command(
+            executable_cmd='ansible-galaxy',
+            cmdline_args=['collection', 'install'] + collections,
+        )
+        print('\n... collections installed.')
+        return 0
 
 
     # TODO: Do it this way?
