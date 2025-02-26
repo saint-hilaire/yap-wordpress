@@ -1,6 +1,19 @@
 import os
 from . import __version__
-from .helpers import *
+from sys import path as sys_path
+
+def find_package_project_dir():
+    for path_str in sys_path:
+        try:
+            try_path = os.path.join(path_str, 'lampsible', 'project')
+            assert os.path.isdir(try_path)
+            return try_path
+        except AssertionError:
+            pass
+    raise RuntimeError("""
+        Could not find a 'project_dir' for Ansible Runner in the expected
+        location. Your Lampsible installation is likely broken, please reinstall.
+        """)
 
 # Lampsible
 # ---------
@@ -39,9 +52,9 @@ SUPPORTED_ACTIONS = [
 # ------------
 USER_HOME_DIR            = os.path.expanduser('~')
 PROJECT_DIR              = find_package_project_dir()
+GALAXY_REQUIREMENTS_FILE = os.path.join(PROJECT_DIR,
+    'ansible-galaxy-requirements.yml')
 DEFAULT_PRIVATE_DATA_DIR = os.path.join(USER_HOME_DIR, '.lampsible')
-# If the user does not supply a value, this will be overwritten by a path
-# inside the package installation, which we detect later on.
 
 # Apache
 # ------

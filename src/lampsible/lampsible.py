@@ -1,5 +1,7 @@
 import os
 from copy import deepcopy
+from textwrap import dedent
+from yaml import safe_load
 from ansible_runner import (
     Runner, RunnerConfig, run_command, run as ansible_runner_run
 )
@@ -38,6 +40,14 @@ class Lampsible:
             domains_for_ssl=[], ssl_test_cert=False,
             extra_packages=[], extra_env_vars={},
             apache_custom_conf_name='',
+            ansible_galaxy_ok=False,
+            # TODO: Lots of room for improvement for this one.
+            # For now, just adding it so we can keep the interactive prompt
+            # about installing missing Galaxy Collections, otherwise, it would
+            # be annoying for the user to have to rerun from the beginning.
+            # But "interactive Lampsible" could be a big feature, perhaps something
+            # for v3.
+            interactive=False,
             ):
 
         self.web_user = web_user
@@ -120,6 +130,8 @@ class Lampsible:
         self.remote_sudo_password = remote_sudo_password
 
         self.banner = LAMPSIBLE_BANNER
+        self.ansible_galaxy_ok = ansible_galaxy_ok
+        self.interactive = interactive
 
 
     def set_action(self, action):
@@ -379,8 +391,6 @@ class Lampsible:
                 else:
                     value = True
 
-
-
             else:
                 value = getattr(self, varname)
 
@@ -391,6 +401,77 @@ class Lampsible:
 
     def _prepare_config(self):
         self.runner_config.prepare()
+
+
+    def _ensure_galaxy_dependencies(self):
+        with open(GALAXY_REQUIREMENTS_FILE, 'r') as stream:
+            required_collections = []
+            tmp_collections = safe_load(stream)['collections']
+            for tmp_dict in tmp_collections:
+                required_collections.append(tmp_dict['name'])
+
+        # TODO There might be a more elegant way to do this - Right now,
+        # we're expecting required_collections to always be a tuple,
+        # and searching for requirements in a big string, but yaml/dict
+        # would be better.
+        installed_collections = run_command(
+            executable_cmd='ansible-galaxy',
+            cmdline_args=[
+                'collection',
+                'list',
+                '--collections-path',
+                os.path.join(USER_HOME_DIR, '.ansible'),
+            ],
+            quiet=True
+        )[0]
+        missing_collections = []
+        for required in required_collections:
+            if required not in installed_collections:
+                missing_collections.append(required)
+        if len(missing_collections) == 0:
+            return 0
+        else:
+            return self._install_galaxy_collections(missing_collections)
+
+
+    def _install_galaxy_collections(self, collections):
+        if not self.ansible_galaxy_ok:
+            formatted_collections_list = '\n- '.join(collections)
+
+            if not self.interactive:
+                print(dedent("""
+The following Ansible Galaxy dependencies are missing,
+and need to be installed into {}:\n- {}\n
+Please set the attribute 'Lampsible.ansible_galaxy_ok=True'.
+                """.format(
+                    USER_HOME_DIR,
+                    formatted_collections_list
+                )))
+                return 1
+
+            ok_to_install = input(dedent(
+                """
+I have to download and install the following
+Ansible Galaxy dependencies into {}:\n- {}\nIs this OK (yes/no)?
+                """).format(
+                os.path.join(USER_HOME_DIR, '.ansible/'),
+                formatted_collections_list
+            )).lower()
+            while ok_to_install != 'yes' and ok_to_install != 'no':
+                ok_to_install = input("Please type 'yes' or 'no': ")
+
+            if ok_to_install != 'yes':
+                return 1
+
+        print('\nInstalling Ansible Galaxy collections into {} ...'.format(
+            os.path.join(USER_HOME_DIR, '.ansible')
+        ))
+        run_command(
+            executable_cmd='ansible-galaxy',
+            cmdline_args=['collection', 'install'] + collections,
+        )
+        print('\n... collections installed.')
+        return 0
 
 
     # TODO: Do it this way?
@@ -407,12 +488,15 @@ class Lampsible:
         self._set_apache_vars()
         self._update_env()
         self._prepare_config()
+
+        rc = 1
         try:
+            assert self._ensure_galaxy_dependencies() == 0
             self.runner.run()
             print(self.runner.stats)
-            self.private_data_helper.cleanup_dir()
-            # TODO: We could do this better, like check the fact_cache and make sure
-            # everything was alright, before returning 0.
-            return 0
-        except RuntimeError:
-            return 1
+            rc = self.runner.rc
+        except (AssertionError, RuntimeError):
+            pass
+
+        self.private_data_helper.cleanup_dir()
+        return rc
