@@ -7,26 +7,26 @@ This tool can automate almost anything that you'd expect from a LAMP stack.
 
 ### Features
 
+* Out of the box LAMP stack
+* Custom Apache configuration (custom webroot, vhosts, etc.)
+* Apache or MySQL by itself
 * WordPress
 * Joomla
 * Drupal
 * Custom Laravel app
-* Custom Apache configuration (custom webroot, vhosts, etc.)
 * Production ready SSL via Certbot
 * SSL for test servers (to avoid being rate limited by Let's Encrypt)
 * Self signed SSL, good for local test networks
-* Apache and database on the same server, or separate servers, whatever you prefer
-* Specify PHP version
-* Specify PHP extensions
+* Custom PHP version, PHP extensions, Composer packages, etc.
 * And so on...
 
 
 ## Requirements
 
-It depends a little how you want to use this. Originally, it was designed to run "via SSH", like most Ansible
-use cases. This means you have some remote server (or 2 servers, if web and database host are 2 different machines),
-where you want to deploy your website. This must be reachable via SSH. Lampsible, on the other hand, will be
-installed on your local machine.
+Depends on the use case. The original use case was "via SSH", like most Ansible situations.
+This means you have a remote server (or 2 of them, if web and database servers
+run on different hosts), where you want to deploy your website. This must be reachable via SSH.
+Lampsible will be installed on your local machine.
 <br>
 However, since v2.1, you can run Lampsible "locally", which means you install Lampsible on the same machine that
 will host your website.
@@ -35,7 +35,8 @@ will host your website.
 
 This is the preferred way to use Lampsible.
 
-* Local: Unix system with Python 3.11 or newer. Tested on Ubuntu and Gentoo Linux. Might work on macOS, but I haven't tested that. Won't work on Windows,
+* Local: Unix system with Python 3.11 or newer. Tested on Ubuntu and Gentoo Linux.
+  Might work on macOS, but I haven't tested that. Won't work on Windows,
   because Ansible requires a Unix like system.
 * Remote: Ubuntu 20 or newer. You need SSH access and root privilege, or ability to elevate privilege to root.
   Might work on older versions, but I doubt it. Support for other distros is planned in a future version.
@@ -144,6 +145,12 @@ lampsible = Lampsible(
     admin_email='wp-admin@example.com',
     admin_password='anothertopsecret',
     site_title='My WordPress Blog',
+    # Set this to give your consent to install some required
+    # Ansible Galaxy Collections. Otherwise, if any of them are missing,
+    # Lampsible will throw an error. If those collections are already installed,
+    # this attribute is no longer required.
+    # See /src/lampsible/project/ansible-galaxy-requirements.yml
+    ansible_galaxy_ok=True,
 )
 
 result = lampsible.run()
